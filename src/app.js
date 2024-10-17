@@ -1,13 +1,14 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const router = require("../routes");
+const adminRouter = require("../routes/Admin/Auth/index");
 const path = require("path");
 const http = require("http");
 const socketIo = require("socket.io");
-const { User } = require("../Model/userSchema");
+const morgan = require("morgan");
 
 const app = express();
+app.use(morgan("dev"));
 const server = http.createServer(app); // Create an HTTP server with Express
 const io = socketIo(server, {
   cors: {
@@ -24,7 +25,7 @@ app.use(express.urlencoded({ limit: "500mb", extended: true }));
 
 const Port = process.env.PORT || 1000;
 
-app.use("/", router);
+app.use("/admin", adminRouter);
 app.use("/images", express.static(path.join("public/images/")));
 
 app.get("/", (req, res) => {
