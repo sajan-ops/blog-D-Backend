@@ -24,11 +24,21 @@ const seedDatabase = async () => {
   try {
     // 1. Create admin table
     await connection.query(
-     `CREATE TABLE IF NOT EXISTS admin (
+      `CREATE TABLE IF NOT EXISTS admin (
       id VARCHAR(255) PRIMARY KEY,
       email VARCHAR(255),
       password VARCHAR(255),
       verified BOOLEAN DEFAULT FALSE )`
+    );
+    // 3. Users table
+    await connection.query(
+      `CREATE TABLE IF NOT EXISTS users (
+       id VARCHAR(255) PRIMARY KEY,
+       firstName VARCHAR(255),
+       lastName VARCHAR(255),
+       email VARCHAR(255),
+       password VARCHAR(255),
+       verified BOOLEAN DEFAULT FALSE )`
     );
     // 2. Create posts table if not exists
     await connection.query(`

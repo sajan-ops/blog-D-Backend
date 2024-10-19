@@ -1,8 +1,6 @@
-const { Admin } = require("../Model/userSchema");
-const { v4: uuidv4 } = require("uuid");
 const jwt = require("jsonwebtoken"); // For creating tokens
-const { pool } = require("../db");
-const { sendEmail } = require("../util/nodemailerService");
+const { pool } = require("../../db");
+const { sendEmail } = require("../../util/nodemailerService");
 
 exports.adminsingin = async (req, res) => {
   let conection = await pool.getConnection();
@@ -19,7 +17,7 @@ exports.adminsingin = async (req, res) => {
       rows[0].verified === 0
     ) {
       // send a confimation email.
-      let message = sendEmail("gogexe2666@digopm.com", rows[0].id);
+      let message = sendEmail("gogexe2666@digopm.com", rows[0].id, "ADMIN");
       if (message === "email sent") {
         res.json({
           success: true,
@@ -37,9 +35,15 @@ exports.adminsingin = async (req, res) => {
       rows[0].verified === 1
     ) {
       // On email confirmation
-      const token = jwt.sign({ adminId: rows[0].id }, process.env.Jwt_Secret, {
-        expiresIn: "12h",
-      });
+      const token = jwt.sign(
+        { adminId: rows[0].id },
+        process.env.Jwt_Secret_Admin,
+        {
+          expiresIn: "12h",
+        }
+      );
+      req.session.user = token;
+      // console.log("req>>",  req.session.token)
       res.json({
         success: true,
         email,

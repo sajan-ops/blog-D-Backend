@@ -1,8 +1,16 @@
 const nodemailer = require("nodemailer");
 
-exports.sendEmail = (to, user_id) => {
+exports.sendEmail = (to, id, user_type, isForgotPassword = false) => {
   try {
-    let verification_link = `${process.env.email_verification_link}/${user_id}`;
+    let verification_link;
+    if (user_type === "USER") {
+      verification_link = `${process.env.email_verification_link_user}/${id}`;
+      if (user_type === "USER" && isForgotPassword === "ForgotPassword") {
+        verification_link = `${process.env.Client_Side_url_for_resetPassword}/${id}`;
+      }
+    } else if (user_type === "ADMIN") {
+      verification_link = `${process.env.email_verification_link_admin}/${id}`;
+    }
     // Create a transporter using SMTP
     const transporter = nodemailer.createTransport({
       service: "gmail",
