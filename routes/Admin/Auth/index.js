@@ -10,6 +10,7 @@ router.post("/signin", adminsingin);
 // Email verification for admin
 router.get("/verify/email/:id", emailVerification);
 
+// coming soon.
 // router.post(
 //   "/admin/postarticle",
 //   upload.fields([

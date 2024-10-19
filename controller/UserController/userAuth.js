@@ -32,7 +32,7 @@ exports.userSignUp = async (req, res) => {
     console.log("rows.affectedRows", rows.affectedRows);
     if (rows.affectedRows) {
       // send a confimation email.
-      let message = sendEmail("gogexe2666@digopm.com", userid, "USER");
+      let message = sendEmail(email, userid, "USER");
       if (message === "email sent") {
         res.json({
           success: true,
@@ -132,7 +132,7 @@ exports.sendEmail_for_forgotPassword = async (req, res) => {
       email,
     ]);
     let message = sendEmail(
-      "gogexe2666@digopm.com",
+      email,
       result[0].id,
       "USER",
       "ForgotPassword"

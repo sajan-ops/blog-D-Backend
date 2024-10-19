@@ -11,13 +11,20 @@ exports.adminsingin = async (req, res) => {
       "SELECT * FROM admin where email=? AND password=?",
       [email, password]
     );
-    if (
+    console.log("rows.length", rows.length)
+    if (rows.length === 0) {
+      res.json({
+        success: false,
+        message:"Wrong Credentials!"
+      });
+      return;
+    } else if (
       rows[0].email === email &&
       rows[0].password === password &&
       rows[0].verified === 0
     ) {
       // send a confimation email.
-      let message = sendEmail("gogexe2666@digopm.com", rows[0].id, "ADMIN");
+      let message = sendEmail(email, rows[0].id, "ADMIN");
       if (message === "email sent") {
         res.json({
           success: true,
@@ -50,6 +57,7 @@ exports.adminsingin = async (req, res) => {
         token,
         message: "successLogin",
       });
+      console.log("rows.length", rows.length);
     }
   } catch (error) {
     console.log(`error during sigin the data ${error}`);
