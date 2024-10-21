@@ -26,12 +26,12 @@ exports.sendEmail = (to, id, user_type, isForgotPassword = false) => {
     // Send mail with defined transport object
     transporter.sendMail({
       from: {
-        name: "proBlogs.net",
-        address: "We are proBlogs",
+        name: "waqaskhanbughlani",
+        address: "waqaskhanbughlani1124@gmail.com",
       },
       to, // list of receivers
       subject: "Email Confirmation!", // Subject line
-      text: "My text", // plain text body
+      text: "This is only test purpose.", // plain text body
       html: ` <!DOCTYPE html>
       <html>
       <head>

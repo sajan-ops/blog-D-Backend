@@ -3,6 +3,11 @@ const { pool } = require("../../db");
 const { sendEmail } = require("../../util/nodemailerService");
 
 exports.adminsingin = async (req, res) => {
+  // first it will find admin in the database
+  // if first time admin is not verified it will
+  // send the email verification and then it will
+  // and the second time it will not send any
+  // email verification if admin is verified.
   let conection = await pool.getConnection();
   try {
     let email = req.body.email;
