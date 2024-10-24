@@ -1,7 +1,8 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const adminRouter = require("../routes/Admin/Auth/index");
+const adminRouter = require("../routes/Admin/Auth/index"); 
+const adminPostRouter = require("../routes/Admin/Posts/index");
 const userRouter = require("../routes/User/Auth/index");
 const path = require("path");
 const http = require("http");
@@ -10,6 +11,7 @@ const morgan = require("morgan");
 const session = require("express-session");
 
 const app = express();
+app.use(express.json()); 
 app.use(
   session({
     secret: "your-secret-key",
@@ -42,6 +44,7 @@ app.use(express.urlencoded({ limit: "500mb", extended: true }));
 const Port = process.env.PORT || 1000;
 
 app.use("/admin", adminRouter);
+app.use("/admin/post", adminPostRouter);
 app.use("/user", userRouter);
 app.use("/images", express.static(path.join("public/images/")));
 

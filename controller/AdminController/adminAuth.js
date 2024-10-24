@@ -16,11 +16,11 @@ exports.adminsingin = async (req, res) => {
       "SELECT * FROM admin where email=? AND password=?",
       [email, password]
     );
-    console.log("rows.length", rows.length)
+    console.log("rows.length", rows.length);
     if (rows.length === 0) {
       res.json({
         success: false,
-        message:"Wrong Credentials!"
+        message: "Wrong Credentials!",
       });
       return;
     } else if (

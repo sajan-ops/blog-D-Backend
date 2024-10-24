@@ -28,7 +28,18 @@ const seedDatabase = async () => {
       id VARCHAR(255) PRIMARY KEY,
       email VARCHAR(255),
       password VARCHAR(255),
-      verified BOOLEAN DEFAULT FALSE )`
+      verified BOOLEAN DEFAULT FALSE 
+     )`
+    );
+    // 2.gallery table
+    await connection.query(
+      `CREATE TABLE IF NOT EXISTS gallery (
+        id VARCHAR(255) PRIMARY KEY,
+        filePath VARCHAR(255),
+        usedInArticle BOOLEAN DEFAULT FALSE,
+        adminID VARCHAR(255),
+        FOREIGN KEY (adminID) REFERENCES admin(id) ON DELETE CASCADE
+       )`
     );
     // 3. Users table
     await connection.query(
@@ -40,30 +51,41 @@ const seedDatabase = async () => {
        password VARCHAR(255),
        verified BOOLEAN DEFAULT FALSE )`
     );
+
+    // 3. author table
+    await connection.query(
+      `CREATE TABLE IF NOT EXISTS authors (
+       id VARCHAR(255) PRIMARY KEY,
+       name VARCHAR(255),
+       lastName VARCHAR(255)
+      )`
+    );
+
+    // 3. Users table
+    await connection.query(
+      `CREATE TABLE IF NOT EXISTS categories (
+         id VARCHAR(255) PRIMARY KEY,
+         name VARCHAR(255)
+          )`
+    );
     // 2. Create posts table if not exists
     await connection.query(`
       CREATE TABLE IF NOT EXISTS posts (
         slug VARCHAR(255) PRIMARY KEY,
         id VARCHAR(255),
         title TEXT,
-        filePath TEXT,
+        filePath JSON,
         content TEXT,
         date_created_in DATETIME,
         description TEXT,
         keywords TEXT,
         author TEXT,
-        canonicalUrl TEXT,
-        metaRobots TEXT,
-        ogTitle TEXT,
-        ogDescription TEXT,
-        ogImage TEXT,
-        twitterTitle TEXT,
-        twitterDescription TEXT,
-        twitterImage TEXT,
-        structuredData TEXT,
+        status TEXT,
+        publish_time TEXT,
+        category TEXT,
+        deleted BOOLEAN DEFAULT FALSE,
         readTime VARCHAR(255)
       );
-      
     `);
 
     console.log("seed my database");
