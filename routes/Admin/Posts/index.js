@@ -20,6 +20,12 @@ const {
   fetchAllCategories,
   deleteSingleCateogry,
   getCatsAuthorsAndDates,
+  getComments,
+  disapproveComment,
+  approveComment,
+  deleteComment,
+  googleStats,
+  googleAnalytics,
 } = require("../../../controller/AdminController/adminPost");
 
 router.post(
@@ -93,5 +99,28 @@ router.delete(
   blockUnAuthorizeAccess_Admin,
   deleteSingleCateogry
 );
+
+// comments moderation
+router.get("/getComments", blockUnAuthorizeAccess_Admin, getComments);
+router.post(
+  "/comments/approve/:id",
+  blockUnAuthorizeAccess_Admin,
+  approveComment
+);
+router.post(
+  "/comments/disapprove/:id",
+  blockUnAuthorizeAccess_Admin,
+  disapproveComment
+);
+
+router.delete(
+  "/comments/deletecomment/:id",
+  blockUnAuthorizeAccess_Admin,
+  deleteComment
+);
+
+router.post("/googleStats", blockUnAuthorizeAccess_Admin, googleStats);
+
+router.post("/googleAnalytics", blockUnAuthorizeAccess_Admin, googleAnalytics);
 
 module.exports = router;

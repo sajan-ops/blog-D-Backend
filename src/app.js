@@ -1,35 +1,32 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const adminRouter = require("../routes/Admin/Auth/index"); 
+const adminRouter = require("../routes/Admin/Auth/index");
 const adminPostRouter = require("../routes/Admin/Posts/index");
+const superAdminRouter = require("../routes/SuperAdmin/Auth/index");
+const superAdminUserHandlerRouter = require("../routes/SuperAdmin/UserHandlerRotues/index");
+const userPostRouter = require("../routes/User/Posts/index");
 const userRouter = require("../routes/User/Auth/index");
 const path = require("path");
-const http = require("http");
+const http = require("http"); // Change to https
 const socketIo = require("socket.io");
 const morgan = require("morgan");
-const session = require("express-session");
+const { pool } = require("../db");
 
 const app = express();
-app.use(express.json()); 
-app.use(
-  session({
-    secret: "your-secret-key",
-    resave: false,
-    saveUninitialized: false,
-    cookie: { secure: process.env.NODE_ENV === 'production' }
-  })
-);
+app.use(express.json());
 app.use(morgan("dev"));
-const server = http.createServer(app); // Create an HTTP server with Express
+
+const server = http.createServer(app); // Create an HTTPS server with Express
 const io = socketIo(server, {
   cors: {
     origin: "*", // Replace with your frontend URLs
     methods: ["GET", "POST"],
     allowedHeaders: ["Content-Type", "Authorization"],
   },
-}); // Integrate Socket.IO with the HTTP server
-// Session setup
+});
+
+// app level settings
 app.use(
   cors({
     origin: "*", // Your next app URL
@@ -40,31 +37,51 @@ app.use(
 require("../db");
 app.use(express.json({ limit: "500mb" }));
 app.use(express.urlencoded({ limit: "500mb", extended: true }));
-
 const Port = process.env.PORT || 1000;
 
+// Define searchconsole at the top level
 app.use("/admin", adminRouter);
 app.use("/admin/post", adminPostRouter);
+app.use("/admin", adminRouter);
+app.use("/admin-super", superAdminRouter); // auth
+app.use("/admin-super/userHandler", superAdminUserHandlerRouter); // apiroutes
 app.use("/user", userRouter);
+app.use("/user/post", userPostRouter);
+
 app.use("/images", express.static(path.join("public/images/")));
 
-app.get("/", (req, res) => {
-  res.json({ message: "welcome to the tamam game backend" });
+app.post("/subscribe", async (req, res) => {
+  const { endpoint, expirationTime, keys } = req.body;
+  console.log("subscribe API call");
+  let connection = await pool.getConnection();
+  // SQL query to insert subscription data
+  const query = `INSERT INTO subscriptions (endpoint, expirationTime, p256dh, auth)
+                 VALUES (?, ?, ?, ?)`;
+  // Run the query
+  connection.query(
+    query,
+    [endpoint, expirationTime, keys.p256dh, keys.auth],
+    (error, results) => {
+      if (error) {
+        console.error("Error saving subscription:", error);
+        res.status(500).json({ error: "Failed to save subscription" });
+      } else {
+        res
+          .status(201)
+          .json({ success: true, subscriptionId: results.insertId });
+      }
+    }
+  );
+  connection.release();
 });
 
-let socketMap = new Map();
+app.get("/", (req, res) => {
+  res.json({ message: "Welcome to the tamam game backend" });
+});
 
 io.on("connection", (socket) => {
-  socket.on("saveConnUserId", ({ userId }) => {
-    socketMap.set(userId, socket.id);
-  });
-  socket.on("answer", (data) => {
-    let userId = data.userId;
-    let socketid = socketMap.get(userId);
-    socket
-      .to(socketid)
-      .emit("answered", { teamName: data.teamName, answer: data.answer });
-  });
+  console.log("User is connected");
+  app.set("socketInstance", socket);
 });
 
 server.listen(Port, () => {

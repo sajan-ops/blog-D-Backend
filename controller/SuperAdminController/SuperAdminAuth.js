@@ -2,7 +2,7 @@ const jwt = require("jsonwebtoken"); // For creating tokens
 const { pool } = require("../../db");
 const { sendEmail } = require("../../util/nodemailerService");
 
-exports.adminsingin = async (req, res) => {
+exports.super_adminsingin = async (req, res) => {
   // first it will find admin in the database
   // if first time admin is not verified it will
   // send the email verification and then it will
@@ -12,11 +12,11 @@ exports.adminsingin = async (req, res) => {
   try {
     let email = req.body.email;
     let password = req.body.password;
+    let role = req.body.role;
     let [rows] = await conection.query(
-      "SELECT * FROM admin where email=? AND password=?",
-      [email, password]
+      "SELECT * FROM admin where email=? AND password=? AND role=?",
+      [email, password, role]
     );
-    console.log("rows.length", rows.length);
     if (rows.length === 0) {
       res.json({
         success: false,
@@ -46,10 +46,10 @@ exports.adminsingin = async (req, res) => {
       rows[0].password === password &&
       rows[0].verified === 1
     ) {
-      // On email confirmation
+      // if email is confirmed
       const token = jwt.sign(
         { adminId: rows[0].id },
-        process.env.Jwt_Secret_Admin,
+        process.env.Jwt_Secret_Super_Admin,
         {
           expiresIn: "12h",
         }
@@ -71,7 +71,7 @@ exports.adminsingin = async (req, res) => {
   }
 };
 
-exports.emailVerification = async (req, res) => {
+exports.super_emailVerification = async (req, res) => {
   let conection = await pool.getConnection();
   const adminId = req.params.id;
   console.log("adminId", adminId);

@@ -4,6 +4,19 @@ const fs = require("fs");
 const { slugify } = require("../../util/slugify");
 const { getCurrentDate } = require("../../util/getCurrentDate");
 const path = require("path");
+const { google } = require("googleapis");
+const { BetaAnalyticsDataClient } = require("@google-analytics/data");
+const webPush = require("web-push");
+
+// Replace with your VAPID keys
+const publicKey =
+  "BPEcNC79FcWy3D2ytLEIIOcGrtLAgPYevQ9KwtGPPwnDlP9Z6mxL2yd2nFS6BH65svBxWfLlD0OjWwOoh7HYkPM";
+const privateKey = "gX5dc7ZKHavMsvNAYQH9zmPUe41lqQ6oCq6TmRX5jHg";
+webPush.setVapidDetails(
+  "mailto:waqaskhanbughlani1124@gmail.com",
+  publicKey,
+  privateKey
+);
 
 exports.uploadPostMedia = async (req, res) => {
   let connection = await pool.getConnection();
@@ -168,7 +181,10 @@ exports.createPost = async (req, res) => {
         fileId,
       ]);
     }
-    res.status(200).json({ message: "File Deleted successfully" });
+    if (status === "instant") {
+      await pushNotifications(connection, title, description);
+    }
+    res.status(200).json({ message: "Post uploaded successfully." });
   } catch (error) {
     console.error("Error uploading Post: ", error);
     res
@@ -523,3 +539,445 @@ exports.getCatsAuthorsAndDates = async (req, res) => {
     connection.release(); // Release the connection back to the pool
   }
 };
+
+exports.getComments = async (req, res) => {
+  // also get the user data.
+  let connection = await pool.getConnection();
+  try {
+    const sql = "select * from comments;";
+    let [comments] = await connection.query(sql, []);
+    let commentsWithUsers = [];
+    for (let i = 0; i < comments.length; i++) {
+      const commentid = comments[i].id;
+      const approve = comments[i].approve;
+      const postid = comments[i].postid;
+      const userid = comments[i].userid;
+      const comment = comments[i].comment;
+      const date = comments[i].date_created_in;
+      const sql2 = "select * from users where id=?";
+      let [users] = await connection.query(sql2, [userid]);
+      const sql3 = "select * from posts where slug=?";
+      let [blogs] = await connection.query(sql3, [postid]);
+      let username = users[0].firstName;
+      let blogTitle = blogs[0].title;
+      let slug = blogs[0].slug;
+      commentsWithUsers.push({
+        commentid,
+        approve,
+        blogTitle,
+        blogslug: slug,
+        username,
+        comment,
+        date,
+      });
+    }
+    res.status(200).json({
+      success: true,
+      commentsWithUsers,
+      message: "Data Got successfully",
+    });
+  } catch (error) {
+    console.error("Error In getting commentsAll: ", error);
+    res
+      .status(500)
+      .json({ message: "Error In getting commentsAll", error: error.message });
+  } finally {
+    connection.release(); // Release the connection back to the pool
+  }
+};
+
+exports.approveComment = async (req, res) => {
+  let clommetid = req.params.id;
+  let connection = await pool.getConnection();
+  try {
+    const sql = `update comments set approve=? where id=?`;
+    await connection.query(sql, [true, clommetid]);
+    res.status(200).json({ message: "Status updated", success: true });
+  } catch (error) {
+    console.error("Error updating comments approval: ", error);
+    res.status(500).json({
+      message: "Error updating comments approval",
+      error: error.message,
+    });
+  } finally {
+    connection.release(); // Release the connection back to the pool
+  }
+};
+
+exports.disapproveComment = async (req, res) => {
+  let clommetid = req.params.id;
+  let connection = await pool.getConnection();
+  try {
+    const sql = `update comments set approve=? where id=?`;
+    await connection.query(sql, [false, clommetid]);
+    res.status(200).json({ message: "Status updated", success: true });
+  } catch (error) {
+    console.error("Error updating comments disapproval: ", error);
+    res.status(500).json({
+      message: "Error updating comments disapproval",
+      error: error.message,
+    });
+  } finally {
+    connection.release(); // Release the connection back to the pool
+  }
+};
+
+exports.deleteComment = async (req, res) => {
+  let clommetid = req.params.id;
+  let connection = await pool.getConnection();
+  try {
+    const sql = `delete from comments where id=?`;
+    await connection.query(sql, [clommetid]);
+    res.status(200).json({ message: "Status updated", success: true });
+  } catch (error) {
+    console.error("Error delete comments : ", error);
+    res
+      .status(500)
+      .json({ message: "Error delete comments ", error: error.message });
+  } finally {
+    connection.release(); // Release the connection back to the pool
+  }
+};
+
+exports.googleStats = async (req, res) => {
+  // Configure authentication
+  const auth = new google.auth.GoogleAuth({
+    keyFile: path.resolve(__dirname, "../../cred/google.json"),
+    scopes: ["https://www.googleapis.com/auth/webmasters.readonly"],
+  });
+
+  const { filter } = req.query; // Expecting a filter like '1month', '3months', '1week', 'today', 'latest'
+
+  let startDate;
+  let endDate = new Date().toISOString().split("T")[0]; // Default to today
+  // Set the start date based on the filter
+  switch (filter) {
+    case "3m":
+      startDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0];
+      break;
+    case "2m":
+      startDate = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0];
+      break;
+    case "1m":
+      startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0];
+      break;
+    case "1w":
+      startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0];
+      break;
+
+    default:
+      // Default to the last 28 days if no filter is provided
+      startDate = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0];
+  }
+
+  try {
+    // Get authenticated client
+    const authClient = await auth.getClient();
+    // Create searchconsole instance with auth
+    const searchConsoleAPI = google.searchconsole({
+      version: "v1",
+      auth: authClient,
+    });
+
+    const siteUrl = "sc-domain:drawsketch.co";
+
+    // Make API request with proper auth
+    const response = await searchConsoleAPI.searchanalytics.query({
+      siteUrl: siteUrl,
+      requestBody: {
+        startDate,
+        endDate,
+        dimensions: ["date", "page", "query", "country", "device"], // Add more dimensions as needed
+        type: "web",
+        rowLimit: 400, // Increase if necessary
+      },
+    });
+
+    // Check if data is available
+    if (!response.data.rows || response.data.rows.length === 0) {
+      return res.status(404).json({
+        message: "No data found for the specified date range.",
+      });
+    }
+
+    const formattedData = response.data.rows.map((row) => ({
+      date: row.keys[0], // Date of the data point
+      page: row.keys[1], // Page URL
+      query: row.keys[2], // Search query
+      country: row.keys[3], // Country code
+      device: row.keys[4], // Device type
+      clicks: row.clicks, // Number of clicks
+      impressions: row.impressions, // Number of impressions
+      ctr: ((row.clicks / row.impressions) * 100).toFixed(2), // Click-through rate
+      averagePosition: row.averagePosition || 0, // Average position (default to 0 if not available)
+    }));
+
+    res.json(formattedData);
+  } catch (error) {
+    console.error("Detailed error:", {
+      message: error.message,
+      status: error.status,
+      details: error?.errors,
+      stack: error.stack,
+    });
+
+    res.status(500).json({
+      error: "Failed to fetch Search Console data",
+      details: error.message,
+      availableSites: error.sites?.data,
+    });
+  }
+};
+
+exports.googleAnalytics = async (req, res) => {
+  const { dateRange } = req.body;
+  // Convert dateRange to startDate
+  let startDate = dateRange;
+  let endDate = "today";
+
+  // Handle special cases
+  switch (dateRange) {
+    case "today":
+      startDate = "yesterday";
+      endDate = "today";
+      break;
+    case "yesterday":
+      startDate = "yesterday";
+      endDate = "yesterday";
+      break;
+    case "yearToDate":
+      startDate = `${new Date().getFullYear()}-01-01`;
+      break;
+    // Default case will use the dateRange directly (e.g., "7daysAgo", "30daysAgo")
+  }
+  try {
+    const analyticsDataClient = new BetaAnalyticsDataClient({
+      keyFile: path.resolve("cred/google.json"),
+    });
+
+    // console.log("dates>>", { startDate, endDate });
+    // Get daily metrics
+    const [dailyResponse] = await analyticsDataClient.runReport({
+      property: `properties/464860211`,
+      dateRanges: [
+        {
+          startDate,
+          endDate,
+        },
+      ],
+      dimensions: [
+        {
+          name: "date",
+        },
+        {
+          name: "sessionSource",
+        },
+        {
+          name: "sessionMedium",
+        },
+      ],
+      metrics: [
+        {
+          name: "sessions",
+        },
+        {
+          name: "engagedSessions",
+        },
+        {
+          name: "bounceRate",
+        },
+      ],
+      orderBys: [
+        {
+          dimension: {
+            orderType: "ALPHANUMERIC",
+            dimensionName: "date",
+          },
+        },
+      ],
+    });
+
+    // Get source breakdown
+    const [sourceResponse] = await analyticsDataClient.runReport({
+      property: `properties/464860211`,
+      dateRanges: [
+        {
+          startDate,
+          endDate,
+        },
+      ],
+      dimensions: [
+        {
+          name: "sessionSource",
+        },
+        {
+          name: "sessionMedium",
+        },
+      ],
+      metrics: [
+        {
+          name: "sessions",
+        },
+        {
+          name: "bounceRate",
+        },
+        {
+          name: "engagedSessions",
+        },
+      ],
+    });
+
+    if (dailyResponse?.rows?.length) {
+      // Process daily metrics
+      const dailyData = {};
+
+      dailyResponse.rows.forEach((row) => {
+        const date = row.dimensionValues[0].value;
+        const source = row.dimensionValues[1].value;
+        const medium = row.dimensionValues[2].value;
+
+        if (!dailyData[date]) {
+          dailyData[date] = {
+            date,
+            sessions: 0,
+            engagedSessions: 0,
+            bounceRate: 0,
+            sources: {},
+          };
+        }
+
+        dailyData[date].sessions += parseInt(row.metricValues[0].value);
+        dailyData[date].engagedSessions += parseInt(row.metricValues[1].value);
+        dailyData[date].bounceRate = (
+          parseFloat(row.metricValues[2].value) * 100
+        ).toFixed(2);
+
+        // Track sources
+        dailyData[date].sources[`${source}/${medium}`] = parseInt(
+          row.metricValues[0].value
+        );
+      });
+
+      // Convert to array and sort by date
+      const formattedData = Object.values(dailyData).sort(
+        (a, b) => new Date(a.date) - new Date(b.date)
+      );
+      console.log("formattedData", formattedData);
+      // Process source breakdown
+      const trafficSources = {
+        organic: 0,
+        social: 0,
+        referral: 0,
+        direct: 0,
+      };
+      // console.log("sourceResponse>>", sourceResponse);
+      sourceResponse.rows.forEach((row) => {
+        const source = row.dimensionValues[0].value.toLowerCase();
+        const medium = row.dimensionValues[1].value.toLowerCase();
+        const sessions = parseInt(row.metricValues[0].value);
+        if (medium === "organic") {
+          trafficSources.organic += sessions;
+        } else if (
+          medium === "social" ||
+          source.includes("facebook") ||
+          source.includes("instagram")
+        ) {
+          trafficSources.social += sessions;
+        } else if (medium === "referral") {
+          trafficSources.referral += sessions;
+        } else if (source === "(direct)" && medium === "(none)") {
+          trafficSources.direct += sessions;
+        }
+      });
+
+      res.json({
+        success: true,
+        data: formattedData,
+        trafficSources,
+      });
+    } else {
+      res.json({
+        success: false,
+        message: "No data found for the specified metrics.",
+      });
+    }
+  } catch (error) {
+    console.error("Error accessing Google Analytics:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+const pushNotifications = async (connection, title, description) => {
+  console.log("Function called with title:", title, "description:", description);
+
+  const notificationPayload = JSON.stringify({
+    title,
+    body: description,
+  });
+  console.log("notificationPayload:", notificationPayload);
+
+  try {
+    const [results] = await connection.query("SELECT * FROM subscriptions");
+    console.log("Found subscriptions:", results.length);
+
+    if (results.length === 0) {
+      console.log("No subscriptions found in database!");
+      return;
+    }
+
+    const notificationPromises = results.map(async (subscription) => {
+      console.log("Processing subscription:", subscription);
+
+      const pushSubscription = {
+        endpoint: subscription.endpoint,
+        expirationTime: subscription.expirationTime,
+        keys: {
+          p256dh: subscription.p256dh,
+          auth: subscription.auth,
+        },
+      };
+
+      try {
+        console.log("Attempting to send notification to:", pushSubscription);
+        await webPush.sendNotification(pushSubscription, notificationPayload);
+        console.log("Successfully sent notification to:", subscription.endpoint);
+      } catch (err) {
+        console.error("Error sending notification:", {
+          error: err.message,
+          statusCode: err.statusCode,
+          endpoint: subscription.endpoint,
+        });
+
+        // If subscription is expired or invalid, remove it
+        if (err.statusCode === 404 || err.statusCode === 410) {
+          await removeInvalidSubscription(connection, subscription.endpoint);
+        }
+      }
+    });
+
+    await Promise.all(notificationPromises);
+    console.log("All notifications processed!");
+  } catch (err) {
+    console.error("Database or general error:", err);
+  }
+};
+
+// Function to remove invalid subscriptions from the database
+const removeInvalidSubscription = async (connection, endpoint) => {
+  await connection.query("DELETE FROM subscriptions WHERE endpoint = ?", [endpoint]);
+  console.log(`Removed invalid subscription: ${endpoint}`);
+};
+

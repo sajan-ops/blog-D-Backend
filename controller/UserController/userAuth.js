@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken"); // For creating tokens
 const { pool } = require("../../db");
 const { sendEmail } = require("../../util/nodemailerService");
 const { v4: uuidv4 } = require("uuid");
+const { default: axios } = require("axios");
 
 exports.userSignUp = async (req, res) => {
   let conection = await pool.getConnection();
@@ -10,6 +11,23 @@ exports.userSignUp = async (req, res) => {
     let lastName = req.body.lastName;
     let email = req.body.email;
     let password = req.body.password;
+    let recaptchaToken = req.body.recaptchaToken;
+    const response = await axios.post(
+      `https://www.google.com/recaptcha/api/siteverify`,
+      null,
+      {
+        params: {
+          secret: process.env.reCaptureSecret,
+          response: recaptchaToken,
+        },
+      }
+    );
+
+    const { success } = response.data;
+    if (!success) {
+      console.log("captua failed");
+      return res.json({ success: false });
+    }
     // First check if user exists
     let [isUserExists] = await conection.query(
       "SELECT * FROM users WHERE email=? AND password=?",
@@ -131,12 +149,7 @@ exports.sendEmail_for_forgotPassword = async (req, res) => {
     let [result] = await conection.query("SELECT id FROM users where email=?", [
       email,
     ]);
-    let message = sendEmail(
-      email,
-      result[0].id,
-      "USER",
-      "ForgotPassword"
-    );
+    let message = sendEmail(email, result[0].id, "USER", "ForgotPassword");
     if (message === "email sent") {
       res.json({
         success: true,
