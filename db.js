@@ -51,7 +51,27 @@ const seedDatabase = async () => {
        password VARCHAR(255),
        verified BOOLEAN DEFAULT FALSE )`
     );
-
+    // 2. Create posts table if not exists
+    await connection.query(`
+  CREATE TABLE IF NOT EXISTS posts (
+    slug VARCHAR(255) PRIMARY KEY,
+    id VARCHAR(255),
+    title TEXT,
+    filePath JSON,
+    content TEXT,
+    date_created_in DATETIME,
+    description TEXT,
+    keywords TEXT,
+    author TEXT,
+    status TEXT,
+    publish_time TEXT,
+    category TEXT,
+    likes INT DEFAULT 0,
+    deleted BOOLEAN DEFAULT FALSE,
+    readTime VARCHAR(255),
+    FULLTEXT(title)
+  );
+`);
     // 3. author table
     await connection.query(
       `CREATE TABLE IF NOT EXISTS authors (
@@ -116,27 +136,6 @@ const seedDatabase = async () => {
           auth VARCHAR(255) NOT NULL
           );
          `);
-    // 2. Create posts table if not exists
-    await connection.query(`
-      CREATE TABLE IF NOT EXISTS posts (
-        slug VARCHAR(255) PRIMARY KEY,
-        id VARCHAR(255),
-        title TEXT,
-        filePath JSON,
-        content TEXT,
-        date_created_in DATETIME,
-        description TEXT,
-        keywords TEXT,
-        author TEXT,
-        status TEXT,
-        publish_time TEXT,
-        category TEXT,
-        likes INT DEFAULT 0,
-        deleted BOOLEAN DEFAULT FALSE,
-        readTime VARCHAR(255),
-        FULLTEXT(title)
-      );
-    `);
 
     console.log("seed my database");
   } catch (err) {
