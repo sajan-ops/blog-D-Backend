@@ -137,6 +137,19 @@ const seedDatabase = async () => {
           );
          `);
 
+    // 4. Create subscription_plans table if not exists
+
+    await connection.query(`
+  CREATE TABLE IF NOT EXISTS subscription_plans (
+    id VARCHAR(255) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    status ENUM('active', 'inactive') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  )
+`);
+
     console.log("seed my database");
   } catch (err) {
     console.error("Error connecting:", err);
@@ -145,6 +158,67 @@ const seedDatabase = async () => {
   }
 };
 
+// Subscription Plan CRUD Operations
+const subscriptionPlanQueries = {
+  createPlan: async (plan) => {
+    const connection = await pool.getConnection();
+    try {
+      const query = `
+        INSERT INTO subscription_plans (id, name, price) 
+        VALUES (?, ?, ?)
+      `;
+      return await connection.query(query, [plan.id, plan.name, plan.price]);
+    } finally {
+      connection.release();
+    }
+  },
+
+  getAllPlans: async () => {
+    const connection = await pool.getConnection();
+    try {
+      const query = `
+        SELECT * FROM subscription_plans 
+        WHERE status = 'active'
+        ORDER BY created_at DESC
+      `;
+      return await connection.query(query);
+    } finally {
+      connection.release();
+    }
+  },
+
+  updatePlan: async (plan) => {
+    const connection = await pool.getConnection();
+    try {
+      const query = `
+        UPDATE subscription_plans 
+        SET name = ?, price = ?
+        WHERE id = ?
+      `;
+      return await connection.query(query, [plan.name, plan.price, plan.id]);
+    } finally {
+      connection.release();
+    }
+  },
+
+  deletePlan: async (id) => {
+    const connection = await pool.getConnection();
+    try {
+      const query = `
+        UPDATE subscription_plans 
+        SET status = 'inactive'
+        WHERE id = ?
+      `;
+      return await connection.query(query, [id]);
+    } finally {
+      connection.release();
+    }
+  },
+};
+
 seedDatabase();
 
-module.exports = { pool };
+module.exports = {
+  pool,
+  ...subscriptionPlanQueries,
+};

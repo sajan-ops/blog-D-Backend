@@ -5,6 +5,8 @@ const adminRouter = require("../routes/Admin/Auth/index");
 const adminPostRouter = require("../routes/Admin/Posts/index");
 const superAdminRouter = require("../routes/SuperAdmin/Auth/index");
 const superAdminUserHandlerRouter = require("../routes/SuperAdmin/UserHandlerRotues/index");
+const subscriptions = require("../routes/SuperAdmin/SubscriptionHandleRoutes/index");
+
 const userPostRouter = require("../routes/User/Posts/index");
 const userRouter = require("../routes/User/Auth/index");
 const path = require("path");
@@ -44,7 +46,8 @@ app.use("/admin", adminRouter);
 app.use("/admin/post", adminPostRouter);
 app.use("/admin", adminRouter);
 app.use("/admin-super", superAdminRouter); // auth
-app.use("/admin-super/userHandler", superAdminUserHandlerRouter); // apiroutes
+app.use("/admin-super/userHandler", superAdminUserHandlerRouter); // apiUsersRoutes
+app.use("/admin-super/subscriptions", subscriptions); // apiUsersRoutes
 app.use("/user", userRouter);
 app.use("/user/post", userPostRouter);
 
