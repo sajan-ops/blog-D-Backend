@@ -75,7 +75,7 @@ const seedDatabase = async () => {
     // 3. author table
     await connection.query(
       `CREATE TABLE IF NOT EXISTS authors (
-       id VARCHAR(255) PRIMARY KEY,
+       id VARCHAR(100) PRIMARY KEY,
        name VARCHAR(255),
        lastName VARCHAR(255)
       )`
@@ -83,10 +83,10 @@ const seedDatabase = async () => {
 
     await connection.query(
       `CREATE TABLE IF NOT EXISTS comments (
-       id VARCHAR(255) PRIMARY KEY,
+       id VARCHAR(100) PRIMARY KEY,
        comment TEXT,
-       postid VARCHAR(255),
-       userid VARCHAR(255),
+       postid VARCHAR(100),
+       userid VARCHAR(100),
        approve BOOLEAN DEFAULT FALSE,
        date_created_in DATETIME,
        FOREIGN KEY (postid) REFERENCES posts(slug) ON DELETE CASCADE,
