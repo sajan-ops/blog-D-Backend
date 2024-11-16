@@ -1,9 +1,3 @@
-// const mongoose = require("mongoose")
-// mongoose
-//   .connect(process.env.mongoDBStr)
-//   .then(() => console.log("Database connected"))
-//   .catch((err) => console.log(`DB connection failed ${err}`));
-
 const mysql = require("mysql2/promise");
 
 // Create a pool of connections
@@ -24,7 +18,7 @@ const seedDatabase = async () => {
     // 1. Create admin table
     await connection.query(
       `CREATE TABLE IF NOT EXISTS admin (
-      id VARCHAR(255) PRIMARY KEY,
+      id VARCHAR(100) PRIMARY KEY,
       email VARCHAR(100),
       role TEXT,
       password VARCHAR(100),
@@ -34,28 +28,28 @@ const seedDatabase = async () => {
     // 2.gallery table
     await connection.query(
       `CREATE TABLE IF NOT EXISTS gallery (
-        id VARCHAR(255) PRIMARY KEY,
-        filePath VARCHAR(255),
+        id VARCHAR(100) PRIMARY KEY,
+        filePath VARCHAR(100),
         usedInArticle BOOLEAN DEFAULT FALSE,
-        adminID VARCHAR(255),
+        adminID VARCHAR(100),
         FOREIGN KEY (adminID) REFERENCES admin(id) ON DELETE CASCADE
        )`
     );
     // 3. Users table
     await connection.query(
       `CREATE TABLE IF NOT EXISTS users (
-       id VARCHAR(255) PRIMARY KEY,
-       firstName VARCHAR(255),
-       lastName VARCHAR(255),
-       email VARCHAR(255),
-       password VARCHAR(255),
+       id VARCHAR(100) PRIMARY KEY,
+       firstName VARCHAR(100),
+       lastName VARCHAR(100),
+       email VARCHAR(100),
+       password VARCHAR(100),
        verified BOOLEAN DEFAULT FALSE )`
     );
     // 2. Create posts table if not exists
     await connection.query(`
   CREATE TABLE IF NOT EXISTS posts (
-    slug VARCHAR(255) PRIMARY KEY,
-    id VARCHAR(255),
+    slug VARCHAR(100) PRIMARY KEY,
+    id VARCHAR(100),
     title TEXT,
     filePath JSON,
     content TEXT,
@@ -68,7 +62,7 @@ const seedDatabase = async () => {
     category TEXT,
     likes INT DEFAULT 0,
     deleted BOOLEAN DEFAULT FALSE,
-    readTime VARCHAR(255),
+    readTime VARCHAR(100),
     FULLTEXT(title)
   );
 `);
@@ -76,8 +70,8 @@ const seedDatabase = async () => {
     await connection.query(
       `CREATE TABLE IF NOT EXISTS authors (
        id VARCHAR(100) PRIMARY KEY,
-       name VARCHAR(255),
-       lastName VARCHAR(255)
+       name VARCHAR(100),
+       lastName VARCHAR(100)
       )`
     );
 
@@ -102,16 +96,16 @@ const seedDatabase = async () => {
        status TEXT,
        startDate DATETIME,
        endDate DATETIME, 
-       userid VARCHAR(255),
+       userid VARCHAR(100),
        FOREIGN KEY (userid) REFERENCES users(id) ON DELETE CASCADE
       )`
     );
 
     await connection.query(
       `CREATE TABLE IF NOT EXISTS likes (
-       id VARCHAR(255) PRIMARY KEY,
-       postid VARCHAR(255),
-       userid VARCHAR(255),
+       id VARCHAR(100) PRIMARY KEY,
+       postid VARCHAR(100),
+       userid VARCHAR(100),
        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
        UNIQUE KEY uniquekeygroup (postid, userid),
        FOREIGN KEY (postid) REFERENCES posts(slug) ON DELETE CASCADE,
@@ -122,8 +116,8 @@ const seedDatabase = async () => {
     // 3. Users table
     await connection.query(
       `CREATE TABLE IF NOT EXISTS categories (
-         id VARCHAR(255) PRIMARY KEY,
-         name VARCHAR(255)
+         id VARCHAR(100) PRIMARY KEY,
+         name VARCHAR(100)
           )`
     );
 
@@ -132,8 +126,8 @@ const seedDatabase = async () => {
           id INT AUTO_INCREMENT PRIMARY KEY,
           endpoint TEXT NOT NULL,
           expirationTime TIMESTAMP NULL,
-          p256dh VARCHAR(255) NOT NULL,
-          auth VARCHAR(255) NOT NULL
+          p256dh VARCHAR(100) NOT NULL,
+          auth VARCHAR(100) NOT NULL
           );
          `);
 
@@ -141,8 +135,8 @@ const seedDatabase = async () => {
 
     await connection.query(`
   CREATE TABLE IF NOT EXISTS subscription_plans (
-    id VARCHAR(255) PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
+    id VARCHAR(100) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
     price DECIMAL(10,2) NOT NULL,
     status ENUM('active', 'inactive') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
